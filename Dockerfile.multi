@@ -1,15 +1,35 @@
-FROM golang:1.19 as builder
+# Multi-Stage Docker Build Demo
+# This Dockerfile demonstrates the benefits of multi-stage builds:
+# 1. Significantly smaller final image size
+# 2. No build tools in production image (security)
+# 3. Optimized for production deployment
 
+# BUILD STAGE - Contains Go compiler and all build tools
+FROM golang:1.21 AS builder
+
+# Set working directory
 WORKDIR /app
 
-COPY . .
+# Copy source code
+COPY app.go .
 
-RUN go build app.go
+# Build the application with optimizations:
+# - Static linking for minimal base image compatibility
+# - Stripped debug info for smaller binary
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -ldflags '-w -s' -o app app.go
 
-ENTRYPOINT [ "./app" ]
-
+# RUNTIME STAGE - Minimal image with only the binary
 FROM scratch
 
-WORKDIR /app
-COPY --from=builder /app/app .
-ENTRYPOINT [ "./app" ]
+# Copy the binary from builder stage
+COPY --from=builder /app/app /app
+
+# Expose port (documentation only, doesn't actually publish)
+EXPOSE 8080
+
+# Set environment variables for production
+ENV ENVIRONMENT=production
+ENV DOCKER=true
+
+# Run the application
+ENTRYPOINT ["/app"]

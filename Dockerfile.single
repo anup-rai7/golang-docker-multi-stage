@@ -1,9 +1,26 @@
-FROM golang:1.19
+# Single-Stage Docker Build (Traditional Approach)
+# This Dockerfile shows the traditional approach:
+# - Includes all build tools and dependencies in final image
+# - Much larger image size
+# - Potential security risks from unnecessary tools
 
+FROM golang:1.21
+
+# Set working directory
 WORKDIR /app
 
-COPY . .
+# Copy source code
+COPY app.go .
 
-RUN go build app.go
+# Build the application
+RUN go build -o app app.go
 
-ENTRYPOINT [ "./app" ]
+# Expose port
+EXPOSE 8080
+
+# Set environment variables
+ENV ENVIRONMENT=production
+ENV DOCKER=true
+
+# Run the application
+ENTRYPOINT ["./app"]
